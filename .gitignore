@@ -1,0 +1,12 @@
+# 可执行文件
+rename
+rename.exe
+
+# 临时文件
+*.log
+*.tmp
+.DS_Store
+
+# Go 相关
+bin/
+obj/ 
