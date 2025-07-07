@@ -8,7 +8,7 @@ go-rename 是一个用于批量重命名文件的 Go 脚本工具，支持跨平
 
 1. 克隆本仓库：
    ```bash
-   git clone https://github.com/你的用户名/go-rename.git
+   git clone https://github.com/wungjyan/go-rename.git
    ```
 2. 进入项目目录并编译：
    ```bash
