@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+        cache: true
+    
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Build binaries
+      run: |
+        mkdir -p dist
+        
+        # Build for different platforms
+        platforms=(
+          "windows/amd64"
+          "windows/386"
+          "darwin/amd64"
+          "darwin/arm64"
+          "linux/amd64"
+          "linux/386"
+          "linux/arm64"
+          "linux/arm"
+        )
+        
+        for platform in "${platforms[@]}"; do
+          platform_split=(${platform//\// })
+          GOOS=${platform_split[0]}
+          GOARCH=${platform_split[1]}
+          
+          output_name="go-rename-${GOOS}-${GOARCH}"
+          if [ $GOOS = "windows" ]; then
+            output_name+='.exe'
+          fi
+          
+          echo "Building for $GOOS/$GOARCH..."
+          env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="-s -w" -o dist/$output_name .
+          
+          if [ $? -ne 0 ]; then
+            echo "An error has occurred! Aborting the script execution..."
+            exit 1
+          fi
+        done
+    
+    - name: Generate checksums
+      run: |
+        cd dist
+        sha256sum * > checksums.txt
+        cat checksums.txt
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Release ${{ steps.version.outputs.version }}
+        body: |
+          ## 🎉 Release ${{ steps.version.outputs.version }}
+          
+          ### 📦 下载说明
+          请根据您的操作系统选择对应的文件下载：
+          
+          - **Windows 64位**: `go-rename-windows-amd64.exe`
+          - **Windows 32位**: `go-rename-windows-386.exe`
+          - **macOS Intel**: `go-rename-darwin-amd64`
+          - **macOS Apple Silicon**: `go-rename-darwin-arm64`
+          - **Linux 64位**: `go-rename-linux-amd64`
+          - **Linux 32位**: `go-rename-linux-386`
+          - **Linux ARM64**: `go-rename-linux-arm64`
+          - **Linux ARM**: `go-rename-linux-arm`
+          
+          ### 🔐 文件校验
+          下载后可使用 `checksums.txt` 文件验证文件完整性。
+          
+          ### 📖 使用方法
+          1. 下载对应平台的可执行文件
+          2. 在终端中运行程序
+          3. 按照提示输入路径、匹配规则和替换模板
+          
+          ### 🐛 问题反馈
+          如有问题请在 [Issues](https://github.com/${{ github.repository }}/issues) 中反馈。
+        files: |
+          dist/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
