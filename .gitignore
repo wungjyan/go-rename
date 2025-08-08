@@ -1,6 +1,15 @@
 # 可执行文件
 rename
 rename.exe
+go-rename
+go-rename.exe
+go-rename-*
+
+# 构建产物
+dist/
+*.tar.gz
+*.zip
+checksums.txt
 
 # 临时文件
 *.log
@@ -9,4 +18,14 @@ rename.exe
 
 # Go 相关
 bin/
-obj/ 
+obj/
+
+# IDE 相关
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+Thumbs.db
+ehthumbs.db
